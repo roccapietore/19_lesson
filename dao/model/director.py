@@ -1,6 +1,5 @@
 from marshmallow import Schema, fields
-
-from setup_db import db
+from setupdb import db
 
 
 class Director(db.Model):
