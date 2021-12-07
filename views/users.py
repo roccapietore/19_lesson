@@ -22,9 +22,9 @@ class UsersView(Resource):
 @user_ns.route('/<int:uid>')
 class UserView(Resource):
     def get(self, uid):
-        r = user_service.get_one(uid)
-        sm_d = UserSchema().dump(r)
-        return sm_d, 200
+        user = user_service.get_one(uid)
+        result = UserSchema().dump(user)
+        return result, 200
 
     def put(self, uid):
         req_json = request.json
