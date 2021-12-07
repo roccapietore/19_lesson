@@ -20,3 +20,4 @@ class DirectorService:
 
     def delete(self, rid):
         self.dao.delete(rid)
+
