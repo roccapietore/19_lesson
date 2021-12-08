@@ -36,7 +36,7 @@ class UserService:
             PWD_HASH_ITERATIONS
         ).decode("utf-8", "ignore")
 
-    def compare_passwords(self, password_hash, other_password):
+    def compare_hashes(self, password_hash, other_password):
         return hmac.compare_digest(
             base64.b85decode(password_hash),
             hashlib.pbkdf2_hmac('sha256', other_password.encode(),

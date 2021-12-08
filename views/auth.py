@@ -4,13 +4,13 @@ import datetime
 
 from flask import request
 from flask_restx import Resource, Namespace, abort
+
+from constants import secret, algo
 from dao.model.user import User
 from implemented import user_service
 from setupdb import db
 
 auth_ns = Namespace('auth')
-secret = 's3cR$eT'
-algo = 'HS256'
 
 
 @auth_ns.route('/')
@@ -23,13 +23,12 @@ class AuthView(Resource):
             abort(400)
 
         user = db.session.query(User).filter(User.username == username).first()
-
         if user is None:
             return {"error": "Неверные учётные данные"}, 401
 
         verification = user_service.compare_passwords(password_hash=user.password, other_password=password)
         if not verification:
-            abort(404)
+            abort(403)
 
         data = {
             "username": user.username,
@@ -50,14 +49,8 @@ class AuthView(Resource):
         refresh_token = req_json.get("refresh_token")
         if refresh_token is None:
             abort(400)
-
-        try:
-            data = jwt.decode(jwt=refresh_token, key=secret, algorithms=[algo])
-        except Exception as e:
-            abort(400)
-
+        data = jwt.decode(jwt=refresh_token, key=secret, algorithms=[algo])
         username = data.get("username")
-
         user = db.session.query(User).filter(User.username == username).first()
 
         data = {
