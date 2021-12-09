@@ -27,6 +27,7 @@ class AuthView(Resource):
             return {"error": "Неверные учётные данные"}, 401
 
         verification = user_service.compare_passwords(password_hash=user.password, other_password=password)
+
         if not verification:
             abort(403)
 
