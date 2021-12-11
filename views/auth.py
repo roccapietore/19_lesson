@@ -1,14 +1,10 @@
 import jwt
-import calendar
-import datetime
-
+from constants import secret, algo
 from flask import request
 from flask_restx import Resource, Namespace, abort
 
-from constants import secret, algo
-from dao.model.user import User
+from dao.model.user import UserSchema
 from implemented import user_service
-from setupdb import db
 
 auth_ns = Namespace('auth')
 
@@ -17,32 +13,18 @@ auth_ns = Namespace('auth')
 class AuthView(Resource):
     def post(self):
         req_json = request.json
+        schema = UserSchema().load(req_json)
         username = req_json.get("username", None)
         password = req_json.get("password", None)
-        if None in [username, password]:
-            abort(400)
-
-        user = db.session.query(User).filter(User.username == username).first()
-        if user is None:
-            return {"error": "Неверные учётные данные"}, 401
-
+        user = user_service.user_by_username(username)
         verification = user_service.compare_passwords(password_hash=user.password, other_password=password)
-
         if not verification:
             abort(403)
-
         data = {
             "username": user.username,
             "role": user.role
         }
-        min30 = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
-        data["exp"] = calendar.timegm(min30.timetuple())
-        access_token = jwt.encode(data, secret, algorithm=algo)
-        days130 = datetime.datetime.utcnow() + datetime.timedelta(days=130)
-        data["exp"] = calendar.timegm(days130.timetuple())
-        refresh_token = jwt.encode(data, secret, algorithm=algo)
-        tokens = {"access_token": access_token, "refresh_token": refresh_token}
-
+        tokens = user_service.get_tokens(data)
         return tokens, 201
 
     def put(self):
@@ -52,19 +34,10 @@ class AuthView(Resource):
             abort(400)
         data = jwt.decode(jwt=refresh_token, key=secret, algorithms=[algo])
         username = data.get("username")
-        user = db.session.query(User).filter(User.username == username).first()
-
+        user = user_service.user_by_username(username)
         data = {
             "username": user.username,
             "role": user.role
         }
-        min30 = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
-        data["exp"] = calendar.timegm(min30.timetuple())
-        access_token = jwt.encode(data, secret, algorithm=algo)
-        days130 = datetime.datetime.utcnow() + datetime.timedelta(days=130)
-        data["exp"] = calendar.timegm(days130.timetuple())
-        refresh_token = jwt.encode(data, secret, algorithm=algo)
-        tokens = {"access_token": access_token, "refresh_token": refresh_token}
-
+        tokens = user_service.get_tokens(data)
         return tokens, 201
-
