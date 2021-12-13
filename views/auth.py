@@ -1,43 +1,32 @@
-import jwt
-from constants import secret, algo
 from flask import request
 from flask_restx import Resource, Namespace, abort
 
-from dao.model.user import UserSchema
-from implemented import user_service
+from marshmallow import Schema, fields, ValidationError
+from implemented import auth_service
 
 auth_ns = Namespace('auth')
+
+
+class AuthValidator(Schema):
+    username = fields.Str(required=True)
+    password = fields.Str(required=True)
 
 
 @auth_ns.route('/')
 class AuthView(Resource):
     def post(self):
         req_json = request.json
-        schema = UserSchema().load(req_json)
-        username = req_json.get("username", None)
-        password = req_json.get("password", None)
-        user = user_service.user_by_username(username)
-        verification = user_service.compare_passwords(password_hash=user.password, other_password=password)
-        if not verification:
-            abort(403)
-        data = {
-            "username": user.username,
-            "role": user.role
-        }
-        tokens = user_service.get_tokens(data)
-        return tokens, 201
+        try:
+            data = AuthValidator().load(req_json)
+            tokens = auth_service.get_tokens(data)
+            return tokens, 201
+        except ValidationError:
+            abort(404)
 
     def put(self):
-        req_json = request.json
-        refresh_token = req_json.get("refresh_token")
+        refresh_token = request.json.get("refresh_token")
         if refresh_token is None:
             abort(400)
-        data = jwt.decode(jwt=refresh_token, key=secret, algorithms=[algo])
-        username = data.get("username")
-        user = user_service.user_by_username(username)
-        data = {
-            "username": user.username,
-            "role": user.role
-        }
-        tokens = user_service.get_tokens(data)
+        tokens = auth_service.get_refresh_token(refresh_token)
         return tokens, 201
+

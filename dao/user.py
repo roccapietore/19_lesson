@@ -30,7 +30,3 @@ class UserDAO:
 
         self.session.add(user)
         self.session.commit()
-
-    def user_by_username(self, username):
-        user = self.session.query(User).filter(User.username == username).first()
-        return user
