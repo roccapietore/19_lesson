@@ -34,8 +34,8 @@ class AuthService:
         })
 
     def get_refresh_token(self, refresh_token):
-        data = jwt.decode(jwt=refresh_token, key=secret, algorithms=[algo])
-        return self.get_tokens(data)
-
-
-
+        try:
+            data = jwt.decode(jwt=refresh_token, key=secret, algorithms=[algo])
+            return self.get_tokens(data)
+        except:
+            abort(404)
